@@ -27,22 +27,24 @@ public class WalletController {
 
     @PostMapping(produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Wallet> create() {
-        return Optional.ofNullable(walletService.createAccount())
+        return walletService.createAccount()
                 .map(walletAccount -> ResponseEntity.status(HttpStatus.CREATED).body(walletAccount))
                 .orElse(ResponseEntity.internalServerError().build());
     }
 
     @PostMapping(value = "/transfer", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WalletTransaction> fundTransfer(@Valid @RequestBody FundTransferRequest fundTransferRequest) {
-        return Optional.ofNullable(walletService.transferFunds(fundTransferRequest))
+        return walletService.transferFunds(fundTransferRequest)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.internalServerError().build());
     }
 
     @GetMapping(value = "/balance", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Double> getBalance(@NotBlank @RequestBody String walletId) {
-        double walletBalance = walletService.retrieveBalance(walletId);
-        return walletBalance > 0 ? ResponseEntity.ok(walletBalance) : ResponseEntity.notFound().build();
+        return walletService.retrieveBalance(walletId)
+                .filter(amount -> amount > 0)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping(value = "/transactions", produces = MediaType.APPLICATION_JSON_VALUE)

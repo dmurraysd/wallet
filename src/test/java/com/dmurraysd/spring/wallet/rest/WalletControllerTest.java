@@ -1,25 +1,22 @@
 package com.dmurraysd.spring.wallet.rest;
 
-import com.dmurraysd.spring.wallet.exception.WalletError;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
+import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.service.WalletService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,7 +43,7 @@ class WalletControllerTest {
 
     @Test
     void shouldCreateNewAccount() {
-        when(walletService.createAccount()).thenReturn(wallet);
+        when(walletService.createAccount()).thenReturn(Optional.of(wallet));
 
         ResponseEntity<Wallet> actualAccount = walletController.create();
 
@@ -58,9 +55,9 @@ class WalletControllerTest {
     @Test
     void shouldDepositFunds() {
         double depositAmount = 50.0;
-        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet, 150.0, TransactionType.DEPOSIT, Instant.now().atZone(ZoneId.systemDefault()));
-        FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.accountId(), depositAmount, TransactionType.DEPOSIT);
-        when(walletService.transferFunds(fundTransferRequest)).thenReturn(expectedTransaction);
+        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet, 150.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
+        FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
+        when(walletService.transferFunds(fundTransferRequest)).thenReturn(Optional.of(expectedTransaction));
 
         ResponseEntity<WalletTransaction> depositTransaction = walletController.fundTransfer(fundTransferRequest);
 
@@ -72,9 +69,9 @@ class WalletControllerTest {
     @Test
     void shouldWithdrawFunds() {
         double withdrawalAmount = 50.0;
-        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet, 50.0, TransactionType.WITHDRAWAL, Instant.now().atZone(ZoneId.systemDefault()));
-        FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.accountId(), withdrawalAmount, TransactionType.WITHDRAWAL);
-        when(walletService.transferFunds(fundTransferRequest)).thenReturn(expectedTransaction);
+        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet, 50.0, TransactionType.WITHDRAWAL, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
+        FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), withdrawalAmount, TransactionType.WITHDRAWAL);
+        when(walletService.transferFunds(fundTransferRequest)).thenReturn(Optional.of(expectedTransaction));
 
         ResponseEntity<WalletTransaction> withdrawalTransaction = walletController.fundTransfer(fundTransferRequest);
 
@@ -86,26 +83,39 @@ class WalletControllerTest {
     @Test
     void shouldRetrieveAccountBalance() {
         double expectedBalance = 100.0;
-        when(walletService.retrieveBalance(wallet.accountId())).thenReturn(expectedBalance);
+        String walletId = UUID.randomUUID().toString();
+        when(walletService.retrieveBalance(walletId)).thenReturn(Optional.of(expectedBalance));
 
-        ResponseEntity<Double> expectedAccountBalance = walletController.getBalance(wallet.accountId());
+        ResponseEntity<Double> expectedAccountBalance = walletController.getBalance(walletId);
 
+        verify(walletService).retrieveBalance(walletId);
         assertTrue(expectedAccountBalance.getStatusCode().is2xxSuccessful());
-        verify(walletService).retrieveBalance(wallet.accountId());
         assertEquals(expectedBalance, expectedAccountBalance.getBody());
+    }
+
+    @Test
+    void shouldNotRetrieveAccountBalanceWhenInvalid() {
+        double invalidBalance = -1.0;
+        when(walletService.retrieveBalance(wallet.walletId())).thenReturn(Optional.of(invalidBalance));
+
+        ResponseEntity<Double> balanceResponse = walletController.getBalance(wallet.walletId());
+
+        verify(walletService).retrieveBalance(wallet.walletId());
+        assertTrue(balanceResponse.getStatusCode().is4xxClientError());
+        assertNull(balanceResponse.getBody());
     }
 
     @Test
     void shouldListAnAccountTransactions() {
         List<WalletTransaction> expectedTransactions = List.of(
-                new WalletTransaction(UUID.randomUUID().toString(), wallet, 100.0, TransactionType.DEPOSIT, Instant.now().atZone(ZoneId.systemDefault()))
+                new WalletTransaction(UUID.randomUUID().toString(), wallet, 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()))
         );
-        when(walletService.getAllTransactions(wallet.accountId())).thenReturn(expectedTransactions);
+        when(walletService.getAllTransactions(wallet.walletId())).thenReturn(expectedTransactions);
 
-        ResponseEntity<List<WalletTransaction>> actualTransactions = walletController.getWalletTransactions(wallet.accountId());
+        ResponseEntity<List<WalletTransaction>> actualTransactions = walletController.getWalletTransactions(wallet.walletId());
 
         assertTrue(actualTransactions.getStatusCode().is2xxSuccessful());
-        verify(walletService).getAllTransactions(wallet.accountId());
+        verify(walletService).getAllTransactions(wallet.walletId());
         assertEquals(expectedTransactions, actualTransactions.getBody());
     }
 

@@ -2,26 +2,80 @@ package com.dmurraysd.spring.wallet.service;
 
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
+import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
+import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
+import com.dmurraysd.spring.wallet.repository.WalletEntityMapper;
+import com.dmurraysd.spring.wallet.repository.WalletRepository;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Supplier;
 
 @Component
 public class WalletService {
-    public Wallet createAccount() {
-        return null;
+
+    private final CacheService cacheService;
+    private final WalletTransactionService walletTransactionService;
+    private final WalletRepository walletRepository;
+    private final Supplier<UUID> uuidSupplier;
+    private final Supplier<Long> longSupplier;
+
+    public WalletService(CacheService cacheService,
+                         WalletTransactionService walletTransactionService,
+                         WalletRepository walletRepository,
+                         Supplier<UUID> uuidSupplier,
+                         Supplier<Long> longSupplier) {
+        this.cacheService = cacheService;
+        this.walletTransactionService = walletTransactionService;
+        this.walletRepository = walletRepository;
+        this.uuidSupplier = uuidSupplier;
+        this.longSupplier = longSupplier;
     }
 
-    public WalletTransaction transferFunds(FundTransferRequest fundTransferRequest) {
-        return null;
+    public Optional<Wallet> createAccount() {
+        UUID walletId = uuidSupplier.get();
+
+        return this.createAccount(walletId.toString(), 0.0);
     }
 
-    public double retrieveBalance(String accountId) {
-        return -1;
+    public Optional<Wallet> createAccount(String walletId, double walletBalance) {
+        Wallet newWallet = new Wallet(walletId, walletBalance);
+        return cacheService.addToCache(newWallet);
     }
 
-    public List<WalletTransaction> getAllTransactions(String amountId) {
-        return List.of();
+    public Optional<WalletTransaction> transferFunds(FundTransferRequest fundTransferRequest) {
+        ZonedDateTime transactionTimestamp = Instant.ofEpochMilli(longSupplier.get()).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
+
+        Optional<Wallet> customerWallet = cacheService.getIfPresent(fundTransferRequest.walletId());
+
+        if (customerWallet.isEmpty()) {
+            customerWallet = this.createAccount(fundTransferRequest.walletId(), 0.0);
+        }
+
+        if(customerWallet.isPresent()) {
+            Wallet updatedWallet = new Wallet(customerWallet.get().walletId(), customerWallet.get().walletBalance() + fundTransferRequest.amount());
+            if(Boolean.TRUE.equals(cacheService.put(updatedWallet))) {
+                return walletTransactionService.saveTransaction(Optional.of(updatedWallet), fundTransferRequest, TransactionType.DEPOSIT, TransactionStatus.SUCCESS);
+            }
+        }
+
+        return walletTransactionService.saveTransaction(Optional.empty(), fundTransferRequest, TransactionType.DEPOSIT, TransactionStatus.FAILURE);
     }
+
+    public Optional<Double> retrieveBalance(String walletId) {
+        return cacheService.getIfPresent(walletId)
+                .map(Wallet::walletBalance);
+    }
+
+    public List<WalletTransaction> getAllTransactions(String walletId) {
+        return walletTransactionService.getAllTransactionsById(walletId);
+    }
+
 }
