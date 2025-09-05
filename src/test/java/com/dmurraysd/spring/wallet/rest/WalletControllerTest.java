@@ -55,7 +55,7 @@ class WalletControllerTest {
     @Test
     void shouldDepositFunds() {
         double depositAmount = 50.0;
-        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet, 150.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
+        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 150.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
         when(walletService.transferFunds(fundTransferRequest)).thenReturn(Optional.of(expectedTransaction));
 
@@ -69,7 +69,7 @@ class WalletControllerTest {
     @Test
     void shouldWithdrawFunds() {
         double withdrawalAmount = 50.0;
-        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet, 50.0, TransactionType.WITHDRAWAL, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
+        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 50.0, TransactionType.WITHDRAWAL, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), withdrawalAmount, TransactionType.WITHDRAWAL);
         when(walletService.transferFunds(fundTransferRequest)).thenReturn(Optional.of(expectedTransaction));
 
@@ -108,7 +108,7 @@ class WalletControllerTest {
     @Test
     void shouldListAnAccountTransactions() {
         List<WalletTransaction> expectedTransactions = List.of(
-                new WalletTransaction(UUID.randomUUID().toString(), wallet, 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()))
+                new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()))
         );
         when(walletService.getAllTransactions(wallet.walletId())).thenReturn(expectedTransactions);
 

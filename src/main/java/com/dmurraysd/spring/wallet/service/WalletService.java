@@ -6,13 +6,8 @@ import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
-import com.dmurraysd.spring.wallet.repository.WalletRepository;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,20 +18,14 @@ public class WalletService {
 
     private final WalletCacheService cacheService;
     private final WalletTransactionService walletTransactionService;
-    private final WalletRepository walletRepository;
     private final Supplier<UUID> uuidSupplier;
-    private final Supplier<Long> longSupplier;
 
     public WalletService(WalletCacheService cacheService,
                          WalletTransactionService walletTransactionService,
-                         WalletRepository walletRepository,
-                         Supplier<UUID> uuidSupplier,
-                         Supplier<Long> longSupplier) {
+                         Supplier<UUID> uuidSupplier) {
         this.cacheService = cacheService;
         this.walletTransactionService = walletTransactionService;
-        this.walletRepository = walletRepository;
         this.uuidSupplier = uuidSupplier;
-        this.longSupplier = longSupplier;
     }
 
     public Optional<Wallet> createAccount() {
@@ -51,8 +40,6 @@ public class WalletService {
     }
 
     public Optional<WalletTransaction> transferFunds(FundTransferRequest fundTransferRequest) {
-        ZonedDateTime transactionTimestamp = Instant.ofEpochMilli(longSupplier.get()).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
-
         Optional<Wallet> customerWallet = cacheService.getIfPresent(fundTransferRequest.walletId());
 
         if (customerWallet.isEmpty()) {
@@ -63,11 +50,11 @@ public class WalletService {
             Double newBalance = calculateNewBalance(fundTransferRequest, customerWallet);
             Wallet updatedWallet = new Wallet(customerWallet.get().walletId(), newBalance);
             if(Boolean.TRUE.equals(cacheService.put(updatedWallet))) {
-                return walletTransactionService.saveTransaction(Optional.of(updatedWallet), fundTransferRequest, fundTransferRequest.transactionType(), TransactionStatus.SUCCESS);
+                return walletTransactionService.saveTransaction(updatedWallet.walletId(), fundTransferRequest, TransactionStatus.SUCCESS);
             }
         }
 
-        return walletTransactionService.saveTransaction(Optional.empty(), fundTransferRequest, fundTransferRequest.transactionType(), TransactionStatus.FAILURE);
+        return walletTransactionService.saveTransaction(fundTransferRequest, TransactionStatus.FAILURE);
     }
 
     public Optional<Double> retrieveBalance(String walletId) {
@@ -76,7 +63,7 @@ public class WalletService {
     }
 
     public List<WalletTransaction> getAllTransactions(String walletId) {
-        return walletTransactionService.getAllTransactionsById(walletId);
+        return walletTransactionService.getAllTransactionsByWalletId(walletId);
     }
 
     private Double calculateNewBalance(FundTransferRequest fundTransferRequest, Optional<Wallet> customerWallet) {
