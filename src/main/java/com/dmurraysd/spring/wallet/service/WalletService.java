@@ -1,11 +1,11 @@
 package com.dmurraysd.spring.wallet.service;
 
+import com.dmurraysd.spring.wallet.exception.InSufficientFundsException;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
-import com.dmurraysd.spring.wallet.repository.WalletEntityMapper;
 import com.dmurraysd.spring.wallet.repository.WalletRepository;
 import org.springframework.stereotype.Component;
 
@@ -21,13 +21,13 @@ import java.util.function.Supplier;
 @Component
 public class WalletService {
 
-    private final CacheService cacheService;
+    private final WalletCacheService cacheService;
     private final WalletTransactionService walletTransactionService;
     private final WalletRepository walletRepository;
     private final Supplier<UUID> uuidSupplier;
     private final Supplier<Long> longSupplier;
 
-    public WalletService(CacheService cacheService,
+    public WalletService(WalletCacheService cacheService,
                          WalletTransactionService walletTransactionService,
                          WalletRepository walletRepository,
                          Supplier<UUID> uuidSupplier,
@@ -60,13 +60,14 @@ public class WalletService {
         }
 
         if(customerWallet.isPresent()) {
-            Wallet updatedWallet = new Wallet(customerWallet.get().walletId(), customerWallet.get().walletBalance() + fundTransferRequest.amount());
+            Double newBalance = calculateNewBalance(fundTransferRequest, customerWallet);
+            Wallet updatedWallet = new Wallet(customerWallet.get().walletId(), newBalance);
             if(Boolean.TRUE.equals(cacheService.put(updatedWallet))) {
-                return walletTransactionService.saveTransaction(Optional.of(updatedWallet), fundTransferRequest, TransactionType.DEPOSIT, TransactionStatus.SUCCESS);
+                return walletTransactionService.saveTransaction(Optional.of(updatedWallet), fundTransferRequest, fundTransferRequest.transactionType(), TransactionStatus.SUCCESS);
             }
         }
 
-        return walletTransactionService.saveTransaction(Optional.empty(), fundTransferRequest, TransactionType.DEPOSIT, TransactionStatus.FAILURE);
+        return walletTransactionService.saveTransaction(Optional.empty(), fundTransferRequest, fundTransferRequest.transactionType(), TransactionStatus.FAILURE);
     }
 
     public Optional<Double> retrieveBalance(String walletId) {
@@ -78,4 +79,17 @@ public class WalletService {
         return walletTransactionService.getAllTransactionsById(walletId);
     }
 
+    private Double calculateNewBalance(FundTransferRequest fundTransferRequest, Optional<Wallet> customerWallet) {
+        Wallet wallet = customerWallet.get();
+        double balance;
+        if (TransactionType.DEPOSIT.equals(fundTransferRequest.transactionType())) {
+            balance = wallet.walletBalance() + fundTransferRequest.amount();
+        } else {
+            if (wallet.walletBalance() < fundTransferRequest.amount()) {
+                throw new InSufficientFundsException("Insufficient funds for wallet with Id: " + wallet.walletId());
+            }
+            balance = wallet.walletBalance() - fundTransferRequest.amount();
+        }
+        return balance;
+    }
 }

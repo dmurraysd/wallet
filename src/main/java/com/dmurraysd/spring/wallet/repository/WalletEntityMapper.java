@@ -11,4 +11,9 @@ public class WalletEntityMapper {
     public static WalletEntity toEntity(Wallet wallet) {
         return new WalletEntity(wallet.walletId(), wallet.walletBalance());
     }
+
+    public static WalletEntity toUpdatedBalanceEntity(Wallet wallet, WalletEntity walletEntity) {
+        walletEntity.setWalletBalance(wallet.walletBalance());
+        return walletEntity;
+    }
 }

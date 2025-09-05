@@ -1,4 +1,4 @@
-package com.dmurraysd.spring.wallet.util;
+package com.dmurraysd.spring.wallet.util.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
 

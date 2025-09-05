@@ -5,8 +5,6 @@ import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
-import com.dmurraysd.spring.wallet.repository.WalletEntity;
-import com.dmurraysd.spring.wallet.repository.WalletEntityMapper;
 import com.dmurraysd.spring.wallet.repository.WalletRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,7 +24,7 @@ import static org.mockito.Mockito.*;
 class WalletServiceTest {
 
     public static final String SUPPLIED_UUID = "00000000-0000-0000-0000-000000000000";
-    CacheService cacheService = mock(CacheService.class);
+    WalletCacheService cacheService = mock(WalletCacheService.class);
     WalletTransactionService walletTransactionService = mock(WalletTransactionService.class);
     WalletRepository walletRepository = mock(WalletRepository.class);
     WalletService walletService = new WalletService(cacheService, walletTransactionService, walletRepository, () -> UUID.fromString(SUPPLIED_UUID), () -> 100001L);
