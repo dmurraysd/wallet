@@ -1,4 +1,4 @@
-package com.dmurraysd.spring.wallet.exception;
+package com.dmurraysd.spring.wallet.rest.exception;
 
 public class ValidationException extends RuntimeException {
     public ValidationException(String message) {

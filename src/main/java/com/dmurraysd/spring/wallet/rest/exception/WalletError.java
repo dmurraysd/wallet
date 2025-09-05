@@ -1,4 +1,4 @@
-package com.dmurraysd.spring.wallet.exception;
+package com.dmurraysd.spring.wallet.rest.exception;
 
 public record WalletError<T>(int code, String message, T details) {
 

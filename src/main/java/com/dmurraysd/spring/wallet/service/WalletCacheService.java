@@ -1,9 +1,12 @@
 package com.dmurraysd.spring.wallet.service;
 
+import com.dmurraysd.spring.wallet.logging.IdProvider;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.repository.WalletEntity;
 import com.dmurraysd.spring.wallet.repository.WalletEntityMapper;
 import com.dmurraysd.spring.wallet.repository.WalletRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
@@ -11,14 +14,18 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static com.dmurraysd.spring.wallet.logging.LoggingUtil.formatLogMessage;
+
 @Component
 public class WalletCacheService {
+
+    private static final Logger logger = LoggerFactory.getLogger(WalletCacheService.class);
 
     private final Long timeOutInMills;
     private final RedisTemplate<String, Object> redisTemplate;
     private final WalletRepository walletRepository;
 
-    public WalletCacheService(@Value("${timeOutInMills:30000}") Long timeOutInMills,
+    public WalletCacheService(@Value("${time.out.in.mills:30000}") Long timeOutInMills,
                               RedisTemplate<String, Object> redisTemplate,
                               WalletRepository walletRepository) {
         this.timeOutInMills = timeOutInMills;
@@ -26,8 +33,9 @@ public class WalletCacheService {
         this.walletRepository = walletRepository;
     }
 
-    public Optional<Wallet> addToCache(Wallet walletRequest) {
+    public Optional<Wallet> addToCache(Wallet walletRequest, IdProvider context) {
         try {
+            logger.info(formatLogMessage(context, "Adding wallet to cache with wallet Id [%s]", walletRequest.walletId()));
             Optional<Wallet> persistedWallet = Optional.of(WalletEntityMapper.toEntity(walletRequest))
                     .map(walletRepository::save)
                     .map(WalletEntityMapper::toDTO);
@@ -36,14 +44,16 @@ public class WalletCacheService {
 
             return persistedWallet;
         } catch (Exception e) {
-
+            logger.error(formatLogMessage(context, "Error processing wallet creation to cache with wallet Id [%s] - [%s]", walletRequest.walletId(), e.getMessage()));
         }
 
         return Optional.empty();
     }
 
-    public Optional<Wallet> getIfPresent(String walletId) {
+    public Optional<Wallet> getIfPresent(String walletId, IdProvider context) {
         try {
+            logger.info(formatLogMessage(context, "Retrieving wallet from cache with wallet Id [%s]", walletId));
+
             Optional<Wallet> wallet = Optional.ofNullable(redisTemplate.opsForValue().get(walletId))
                     .map(Wallet.class::cast);
 
@@ -56,14 +66,16 @@ public class WalletCacheService {
 
             return wallet;
         } catch (Exception e) {
-
+            logger.error(formatLogMessage(context, "Error processing wallet retrieval from cache with wallet Id [%s]- [%s]", walletId, e.getMessage()));
         }
 
         return Optional.empty();
     }
 
-    public Boolean put(Wallet wallet) {
+    public Boolean put(Wallet wallet, IdProvider context) {
         try {
+            logger.info(formatLogMessage(context, "Updating wallet to cache with wallet Id [%s]", wallet.walletId()));
+
             redisTemplate.opsForValue().set(wallet.walletId(), wallet, timeOutInMills, TimeUnit.MILLISECONDS);
 
             Optional<WalletEntity> persistedWalletEntity = this.walletRepository.findByWalletId(wallet.walletId())
@@ -75,7 +87,7 @@ public class WalletCacheService {
 
             return true;
         } catch (Exception e) {
-
+            logger.error(formatLogMessage(context, "Retrieving wallet from cache with wallet Id [%s]- [%s]", wallet.walletId(), e.getMessage()));
         }
 
         return false;

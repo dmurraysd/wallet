@@ -1,4 +1,4 @@
-package com.dmurraysd.spring.wallet.exception;
+package com.dmurraysd.spring.wallet.rest.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.Errors;

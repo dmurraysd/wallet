@@ -1,6 +1,8 @@
 package com.dmurraysd.spring.wallet.service;
 
 import com.dmurraysd.spring.wallet.cache.CacheConfig;
+import com.dmurraysd.spring.wallet.logging.IdProvider;
+import com.dmurraysd.spring.wallet.logging.LoggingUtil;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.repository.WalletEntityMapper;
 import com.dmurraysd.spring.wallet.repository.WalletRepository;
@@ -15,6 +17,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -26,6 +29,9 @@ import static org.mockito.Mockito.*;
 @DataRedisTest(properties = {"spring.data.redis.port=6379",
         "spring.data.redis.host=localhost"})
 class WalletCacheServiceTest {
+    private static final String SOURCE_ID = "wallet-rest-api";
+    public static final String CONTEXT_UUID = "a1d1429a-c68d-43e8-ac6d-9d62a1f47c03";
+    private static final IdProvider context = LoggingUtil.loggingContext(UUID.fromString(CONTEXT_UUID), SOURCE_ID);
 
     @MockitoBean
     WalletRepository walletRepository;
@@ -42,7 +48,7 @@ class WalletCacheServiceTest {
         Wallet wallet = new Wallet("123", 100.0);
         when(walletRepository.save(any())).thenReturn(WalletEntityMapper.toEntity(wallet));
 
-        Wallet actualWallet = walletCacheService.addToCache(wallet).get();
+        Wallet actualWallet = walletCacheService.addToCache(wallet, context).get();
 
         verify(walletRepository).save(any());
         assertEquals(wallet, actualWallet);
@@ -53,7 +59,7 @@ class WalletCacheServiceTest {
         Wallet wallet = new Wallet("123", 100.0);
         redisTemplate.opsForValue().set(wallet.walletId(), wallet);
 
-        Wallet actualWallet = walletCacheService.getIfPresent(wallet.walletId()).get();
+        Wallet actualWallet = walletCacheService.getIfPresent(wallet.walletId(), context).get();
 
         verifyNoInteractions(walletRepository);
         assertEquals(wallet, actualWallet);
@@ -64,7 +70,7 @@ class WalletCacheServiceTest {
         Wallet wallet = new Wallet("123", 100.0);
         when(walletRepository.findByWalletId(any())).thenReturn(Optional.of(WalletEntityMapper.toEntity(wallet)));
 
-        Wallet actualWallet = walletCacheService.getIfPresent(wallet.walletId()).get();
+        Wallet actualWallet = walletCacheService.getIfPresent(wallet.walletId(), context).get();
 
         Wallet savedToCacheWallet = (Wallet) redisTemplate.opsForValue().get(wallet.walletId());
         verify(walletRepository).findByWalletId(any());
@@ -77,7 +83,7 @@ class WalletCacheServiceTest {
         Wallet wallet = new Wallet("123", 100.0);
         when(walletRepository.save(any())).thenReturn(WalletEntityMapper.toEntity(wallet));
 
-        Boolean isPutSuccess = walletCacheService.put(wallet);
+        Boolean isPutSuccess = walletCacheService.put(wallet, context);
 
         Wallet savedToCacheWallet = (Wallet) redisTemplate.opsForValue().get(wallet.walletId());
         verify(walletRepository).save(any());
