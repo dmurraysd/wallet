@@ -12,6 +12,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import static com.dmurraysd.spring.wallet.logging.LoggingUtil.formatLogMessage;
@@ -24,13 +25,16 @@ public class WalletCacheService {
     private final Long timeOutInMills;
     private final RedisTemplate<String, Object> redisTemplate;
     private final WalletRepository walletRepository;
+    private final CacheLockingService cacheLockingService;
 
     public WalletCacheService(@Value("${cache.expiry.in.mills:30000}") Long timeOutInMills,
                               RedisTemplate<String, Object> redisTemplate,
-                              WalletRepository walletRepository) {
+                              WalletRepository walletRepository,
+                              CacheLockingService cacheLockingService) {
         this.timeOutInMills = timeOutInMills;
         this.redisTemplate = redisTemplate;
         this.walletRepository = walletRepository;
+        this.cacheLockingService = cacheLockingService;
     }
 
     public Optional<Wallet> addToCache(Wallet walletRequest, IdProvider context) {
@@ -75,7 +79,8 @@ public class WalletCacheService {
     public Boolean put(Wallet wallet, IdProvider context) {
         try {
             logger.info(formatLogMessage(context, "Updating wallet to cache with wallet Id [%s]", wallet.walletId()));
-
+            String lockValue = UUID.randomUUID().toString();
+            cacheLockingService.acquireLock(wallet.walletId(), lockValue);
             redisTemplate.opsForValue().set(wallet.walletId(), wallet, timeOutInMills, TimeUnit.MILLISECONDS);
 
             Optional<WalletEntity> persistedWalletEntity = this.walletRepository.findByWalletId(wallet.walletId())
@@ -85,6 +90,7 @@ public class WalletCacheService {
                 walletRepository.save(WalletEntityMapper.toEntity(wallet));
             }
 
+            cacheLockingService.releaseLock(wallet.walletId(), lockValue);
             return true;
         } catch (Exception e) {
             logger.error(formatLogMessage(context, "Retrieving wallet from cache with wallet Id [%s]- [%s]", wallet.walletId(), e.getMessage()));

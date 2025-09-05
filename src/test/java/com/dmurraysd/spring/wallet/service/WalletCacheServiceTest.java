@@ -25,8 +25,8 @@ import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
 @EnableAutoConfiguration
-@ContextConfiguration(classes = {RedisTestConfig.class, WalletCacheService.class, CacheConfig.class, WalletRepository.class})
-@DataRedisTest(properties = {"spring.data.redis.port=6379",
+@ContextConfiguration(classes = {RedisTestConfig.class, WalletCacheService.class, CacheConfig.class, WalletRepository.class, CacheLockingService.class})
+@DataRedisTest(properties = {"spring.data.redis.port=6381",
         "spring.data.redis.host=localhost"})
 class WalletCacheServiceTest {
     private static final String SOURCE_ID = "wallet-rest-api";
@@ -90,4 +90,5 @@ class WalletCacheServiceTest {
         assertTrue(isPutSuccess);
         assertEquals(wallet, savedToCacheWallet);
     }
+
 }

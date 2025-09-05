@@ -37,7 +37,6 @@ class WalletControllerTest {
 
     private WalletController walletController;
 
-
     private Wallet wallet;
 
     @BeforeEach

@@ -56,7 +56,7 @@ public class WalletController {
                 .orElse(ResponseEntity.internalServerError().build());
     }
 
-    @GetMapping(value = "/balance", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/balance", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Double> getBalance(@NotBlank @RequestBody String walletId) {
         IdProvider context = LoggingUtil.loggingContext(uuidSupplier.get(), SOURCE_ID);
         logger.info(formatLogMessage(context, "Balance retrieval with wallet Id %s", walletId));

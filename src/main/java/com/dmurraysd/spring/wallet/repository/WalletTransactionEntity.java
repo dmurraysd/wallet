@@ -17,10 +17,10 @@ public class WalletTransactionEntity {
     @Column(name = "transactionId")
     private String transactionId;
 
-    @Column(name = "wallet")
+    @Column(name = "walletId")
     private String walletId;
 
-    @Column(name = "wallet")
+    @Column(name = "amount")
     private Double amount;
 
     @Column(name = "transactionType")
@@ -53,7 +53,7 @@ public class WalletTransactionEntity {
     }
 
     public String getWalletId() {
-        return walletId;
+        return this.walletId;
     }
 
     public void setWalletId(String wallet) {
