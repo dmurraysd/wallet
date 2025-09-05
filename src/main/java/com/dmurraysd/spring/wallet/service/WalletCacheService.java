@@ -25,7 +25,7 @@ public class WalletCacheService {
     private final RedisTemplate<String, Object> redisTemplate;
     private final WalletRepository walletRepository;
 
-    public WalletCacheService(@Value("${time.out.in.mills:30000}") Long timeOutInMills,
+    public WalletCacheService(@Value("${cache.expiry.in.mills:30000}") Long timeOutInMills,
                               RedisTemplate<String, Object> redisTemplate,
                               WalletRepository walletRepository) {
         this.timeOutInMills = timeOutInMills;

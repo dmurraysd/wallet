@@ -10,7 +10,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.io.IOException;
 
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "locking-test"})
 @TestConfiguration
 public class RedisTestConfig {
 
@@ -22,7 +22,9 @@ public class RedisTestConfig {
 
     @PostConstruct
     public void startRedis() throws IOException {
-        redisServer.start();
+        if( !redisServer.isActive()) {
+            redisServer.start();
+        }
     }
 
     @PreDestroy

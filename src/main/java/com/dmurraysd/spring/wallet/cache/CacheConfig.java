@@ -23,12 +23,12 @@ public class CacheConfig {
 
     @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory redisConnectionFactory, ObjectMapper mapper) {
-        Jackson2JsonRedisSerializer<Wallet> serializer = new Jackson2JsonRedisSerializer<>(mapper, Wallet.class);
+        //Jackson2JsonRedisSerializer<Wallet> serializer = new Jackson2JsonRedisSerializer<>(mapper, Wallet.class);
 
         RedisTemplate<String, Object> redisTemplate = new RedisTemplate<>();
         redisTemplate.setConnectionFactory(redisConnectionFactory);
         redisTemplate.setEnableTransactionSupport(true);
-        redisTemplate.setValueSerializer(serializer);
+        //redisTemplate.setValueSerializer(serializer);
 
         return redisTemplate;
     }
