@@ -5,18 +5,18 @@ import com.dmurraysd.spring.wallet.logging.LoggingUtil;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
-import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
+import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
 import com.dmurraysd.spring.wallet.service.WalletService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,7 +29,7 @@ class WalletControllerTest {
     private static final String SOURCE_ID = "wallet-rest-api";
     public static final String CONTEXT_UUID = "a1d1429a-c68d-43e8-ac6d-9d62a1f47c03";
     private static final IdProvider context = LoggingUtil.loggingContext(UUID.fromString(CONTEXT_UUID), SOURCE_ID);
-
+    private static final Instant timestamp = Instant.parse("2024-09-24T14:09:22.231434Z");
     public static final String ACCOUNT_ID = UUID.randomUUID().toString();
     public static final double OPEN_BALANCE = 100.0;
 
@@ -59,7 +59,7 @@ class WalletControllerTest {
     @Test
     void shouldDepositFunds() {
         double depositAmount = 50.0;
-        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 150.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
+        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 150.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp);
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
         when(walletService.transferFunds(fundTransferRequest, context)).thenReturn(Optional.of(expectedTransaction));
 
@@ -73,7 +73,7 @@ class WalletControllerTest {
     @Test
     void shouldWithdrawFunds() {
         double withdrawalAmount = 50.0;
-        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 50.0, TransactionType.WITHDRAWAL, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()));
+        WalletTransaction expectedTransaction = new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 50.0, TransactionType.WITHDRAWAL, TransactionStatus.SUCCESS, timestamp);
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), withdrawalAmount, TransactionType.WITHDRAWAL);
         when(walletService.transferFunds(fundTransferRequest, context)).thenReturn(Optional.of(expectedTransaction));
 
@@ -112,7 +112,7 @@ class WalletControllerTest {
     @Test
     void shouldListAnAccountTransactions() {
         List<WalletTransaction> expectedTransactions = List.of(
-                new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()))
+                new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp)
         );
         when(walletService.getAllTransactions(wallet.walletId(), context)).thenReturn(expectedTransactions);
 

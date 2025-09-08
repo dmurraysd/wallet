@@ -7,19 +7,14 @@ import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 class WalletServiceTest {
@@ -27,15 +22,11 @@ class WalletServiceTest {
     private static final String SOURCE_ID = "wallet-rest-api";
     public static final String CONTEXT_UUID = "a1d1429a-c68d-43e8-ac6d-9d62a1f47c03";
     private static final IdProvider context = LoggingUtil.loggingContext(UUID.fromString(CONTEXT_UUID), SOURCE_ID);
-
     public static final String TRANSACTION_UUID = "00000000-0000-0000-0000-000000000000";
+    private static final Instant timestamp = Instant.parse("2024-09-24T14:09:22.231434Z");
     WalletCacheService cacheService = mock(WalletCacheService.class);
     WalletTransactionService walletTransactionService = mock(WalletTransactionService.class);
     WalletService walletService = new WalletService(cacheService, walletTransactionService, () -> UUID.fromString(TRANSACTION_UUID));
-
-    @BeforeEach
-    void setUp() {
-    }
 
     @Test
     void shouldCreateAccountInRepositoryAndCache() {
@@ -64,9 +55,8 @@ class WalletServiceTest {
         Wallet wallet = new Wallet(TRANSACTION_UUID, 0.0);
         Wallet updatedWallet = new Wallet(wallet.walletId(), wallet.walletBalance() + 50.0);
         double depositAmount = 50.0;
-        ZonedDateTime zonedDateTime = Instant.ofEpochMilli(100001L).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
-        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, zonedDateTime);
+        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp);
         when(cacheService.getIfPresent(wallet.walletId(), context)).thenReturn(Optional.of(wallet));
         when(cacheService.put(updatedWallet, context)).thenReturn(true);
         when(walletTransactionService.saveTransaction(updatedWallet.walletId(), fundTransferRequest, TransactionStatus.SUCCESS, context)).thenReturn(Optional.of(expectedTransaction));
@@ -84,9 +74,8 @@ class WalletServiceTest {
         Wallet wallet = new Wallet(TRANSACTION_UUID, 100.0);
         double withdrawalAmount = 50.0;
         Wallet updatedWallet = new Wallet(wallet.walletId(), wallet.walletBalance() - withdrawalAmount);
-        ZonedDateTime zonedDateTime = Instant.ofEpochMilli(100001L).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), withdrawalAmount, TransactionType.WITHDRAWAL);
-        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), withdrawalAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, zonedDateTime);
+        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), withdrawalAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp);
         when(cacheService.getIfPresent(wallet.walletId(), context)).thenReturn(Optional.of(wallet));
         when(cacheService.put(updatedWallet, context)).thenReturn(true);
         when(walletTransactionService.saveTransaction(updatedWallet.walletId(), fundTransferRequest, TransactionStatus.SUCCESS, context)).thenReturn(Optional.of(expectedTransaction));
@@ -104,9 +93,8 @@ class WalletServiceTest {
         Wallet wallet = new Wallet(TRANSACTION_UUID, 0.0);
         Wallet updatedWallet = new Wallet(wallet.walletId(), wallet.walletBalance() + 50.0);
         double depositAmount = 50.0;
-        ZonedDateTime zonedDateTime = Instant.ofEpochMilli(100001L).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
-        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, zonedDateTime);
+        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp);
 
         when(cacheService.getIfPresent(wallet.walletId(), context)).thenReturn(Optional.empty());
         when(cacheService.addToCache(wallet, context)).thenReturn(Optional.of(wallet));
@@ -126,9 +114,8 @@ class WalletServiceTest {
         Wallet wallet = new Wallet(TRANSACTION_UUID, 0.0);
         Wallet updatedWallet = new Wallet(wallet.walletId(), wallet.walletBalance() + 50.0);
         double depositAmount = 50.0;
-        ZonedDateTime zonedDateTime = Instant.ofEpochMilli(100001L).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
-        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, zonedDateTime);
+        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp);
 
         when(cacheService.getIfPresent(wallet.walletId(), context)).thenReturn(Optional.empty());
         when(cacheService.addToCache(wallet, context)).thenReturn(Optional.empty());
@@ -148,12 +135,11 @@ class WalletServiceTest {
         Wallet wallet = new Wallet(TRANSACTION_UUID, 0.0);
         Wallet updatedWallet = new Wallet(wallet.walletId(), wallet.walletBalance() + 50.0);
         double depositAmount = 50.0;
-        ZonedDateTime zonedDateTime = Instant.ofEpochMilli(100001L).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
         FundTransferRequest fundTransferRequest = new FundTransferRequest(wallet.walletId(), depositAmount, TransactionType.DEPOSIT);
-        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, zonedDateTime);
+        WalletTransaction expectedTransaction = new WalletTransaction(TRANSACTION_UUID, updatedWallet.walletId(), depositAmount, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp);
 
         when(cacheService.getIfPresent(wallet.walletId(), context)).thenReturn(Optional.of(wallet));
-        when(cacheService.put(updatedWallet,context )).thenReturn(false);
+        when(cacheService.put(updatedWallet, context)).thenReturn(false);
         when(walletTransactionService.saveTransaction(fundTransferRequest, TransactionStatus.FAILURE, context)).thenReturn(Optional.of(expectedTransaction));
 
         WalletTransaction walletTransaction = walletService.transferFunds(fundTransferRequest, context).get();
@@ -178,7 +164,7 @@ class WalletServiceTest {
     void shouldGetAllTransactions() {
         Wallet wallet = new Wallet(TRANSACTION_UUID, 100.0);
         List<WalletTransaction> expectedTransactions = List.of(
-                new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, Instant.now().atZone(ZoneId.systemDefault()))
+                new WalletTransaction(UUID.randomUUID().toString(), wallet.walletId(), 100.0, TransactionType.DEPOSIT, TransactionStatus.SUCCESS, timestamp)
         );
         when(walletTransactionService.getAllTransactionsByWalletId(wallet.walletId(), context)).thenReturn(expectedTransactions);
 

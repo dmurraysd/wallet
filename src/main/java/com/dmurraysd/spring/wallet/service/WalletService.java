@@ -1,12 +1,12 @@
 package com.dmurraysd.spring.wallet.service;
 
 import com.dmurraysd.spring.wallet.logging.IdProvider;
-import com.dmurraysd.spring.wallet.rest.exception.InSufficientFundsException;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
+import com.dmurraysd.spring.wallet.rest.exception.InSufficientFundsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -57,10 +57,10 @@ public class WalletService {
             customerWallet = this.createAccount(fundTransferRequest.walletId(), 0.0, context);
         }
 
-        if(customerWallet.isPresent()) {
+        if (customerWallet.isPresent()) {
             Double newBalance = calculateNewBalance(fundTransferRequest, customerWallet);
             Wallet updatedWallet = new Wallet(customerWallet.get().walletId(), newBalance);
-            if(Boolean.TRUE.equals(cacheService.put(updatedWallet, context))) {
+            if (Boolean.TRUE.equals(cacheService.put(updatedWallet, context))) {
                 return walletTransactionService.saveTransaction(updatedWallet.walletId(), fundTransferRequest, TransactionStatus.SUCCESS, context);
             }
         }
@@ -75,7 +75,7 @@ public class WalletService {
     }
 
     public List<WalletTransaction> getAllTransactions(String walletId, IdProvider context) {
-        logger.info(formatLogMessage(context, "Retrieving all trnsactions with wallet Id %s", walletId));
+        logger.info(formatLogMessage(context, "Retrieving all transactions with wallet Id %s", walletId));
         return walletTransactionService.getAllTransactionsByWalletId(walletId, context);
     }
 

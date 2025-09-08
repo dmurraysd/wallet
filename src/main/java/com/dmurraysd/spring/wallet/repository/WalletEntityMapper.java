@@ -3,7 +3,7 @@ package com.dmurraysd.spring.wallet.repository;
 import com.dmurraysd.spring.wallet.model.Wallet;
 
 public class WalletEntityMapper {
-    public WalletEntityMapper() {
+    private WalletEntityMapper() {
     }
 
     public static Wallet toDTO(WalletEntity walletEntity) {

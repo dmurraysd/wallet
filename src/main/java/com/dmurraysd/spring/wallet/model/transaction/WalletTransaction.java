@@ -1,6 +1,7 @@
 package com.dmurraysd.spring.wallet.model.transaction;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 
-public record WalletTransaction(String transactionId, String walletId, double amount, TransactionType transactionType, TransactionStatus transactionStatus, ZonedDateTime zonedDateTime) implements Transaction {
+public record WalletTransaction(String transactionId, String walletId, Double amount, TransactionType transactionType,
+                                TransactionStatus transactionStatus, Instant timestamp) {
 }

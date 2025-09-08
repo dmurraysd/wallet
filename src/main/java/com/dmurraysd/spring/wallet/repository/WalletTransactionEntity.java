@@ -4,7 +4,6 @@ import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionType;
 import jakarta.persistence.*;
 
-import java.time.ZonedDateTime;
 import java.util.Objects;
 
 @Entity
@@ -29,19 +28,19 @@ public class WalletTransactionEntity {
     @Column(name = "transactionStatus")
     private TransactionStatus transactionStatus;
 
-    @Column(name = "zonedDateTime")
-    private ZonedDateTime zonedDateTime;
+    @Column(name = "transactionTimestamp")
+    private Long transactionTimestamp;
 
     public WalletTransactionEntity() {
     }
 
-    public WalletTransactionEntity(String transactionId, String walletId, Double amount, TransactionType transactionType, TransactionStatus transactionStatus, ZonedDateTime zonedDateTime) {
+    public WalletTransactionEntity(String transactionId, String walletId, Double amount, TransactionType transactionType, TransactionStatus transactionStatus, Long transactionTimestamp) {
         this.transactionId = transactionId;
         this.walletId = walletId;
         this.amount = amount;
         this.transactionType = transactionType;
         this.transactionStatus = transactionStatus;
-        this.zonedDateTime = zonedDateTime;
+        this.transactionTimestamp = transactionTimestamp;
     }
 
     public String getTransactionId() {
@@ -84,24 +83,36 @@ public class WalletTransactionEntity {
         this.transactionStatus = transactionStatus;
     }
 
-    public ZonedDateTime getZonedDateTime() {
-        return zonedDateTime;
+    public Long getTransactionTimestamp() {
+        return transactionTimestamp;
     }
 
-    public void setZonedDateTime(ZonedDateTime zonedDateTime) {
-        this.zonedDateTime = zonedDateTime;
+    public void setTransactionTimestamp(Long transactionTimestamp) {
+        this.transactionTimestamp = transactionTimestamp;
     }
 
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         WalletTransactionEntity that = (WalletTransactionEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(transactionId, that.transactionId) && Objects.equals(walletId, that.walletId) && Objects.equals(amount, that.amount) && transactionType == that.transactionType && transactionStatus == that.transactionStatus && Objects.equals(zonedDateTime, that.zonedDateTime);
+        return Objects.equals(id, that.id) && Objects.equals(transactionId, that.transactionId) && Objects.equals(walletId, that.walletId) && Objects.equals(amount, that.amount) && transactionType == that.transactionType && transactionStatus == that.transactionStatus && Objects.equals(transactionTimestamp, that.transactionTimestamp);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, transactionId, walletId, amount, transactionType, transactionStatus, zonedDateTime);
+        return Objects.hash(id, transactionId, walletId, amount, transactionType, transactionStatus, transactionTimestamp);
+    }
+
+    @Override
+    public String toString() {
+        return "WalletTransactionEntity{" +
+                "transactionId='" + transactionId + '\'' +
+                ", walletId='" + walletId + '\'' +
+                ", amount=" + amount +
+                ", transactionType=" + transactionType +
+                ", transactionStatus=" + transactionStatus +
+                ", transactionTimestamp=" + transactionTimestamp +
+                '}';
     }
 }
 

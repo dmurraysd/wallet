@@ -4,15 +4,13 @@ import com.dmurraysd.spring.wallet.logging.IdProvider;
 import com.dmurraysd.spring.wallet.model.transaction.FundTransferRequest;
 import com.dmurraysd.spring.wallet.model.transaction.TransactionStatus;
 import com.dmurraysd.spring.wallet.model.transaction.WalletTransaction;
-import com.dmurraysd.spring.wallet.repository.WalletTransactionRepository;
 import com.dmurraysd.spring.wallet.repository.WalletTransactionEntityMapper;
+import com.dmurraysd.spring.wallet.repository.WalletTransactionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
@@ -26,28 +24,30 @@ public class WalletTransactionService {
 
     private static final Logger logger = LoggerFactory.getLogger(WalletTransactionService.class);
 
-    private final WalletTransactionRepository transactionRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
     private final Supplier<UUID> uuidSupplier;
-    private final Supplier<Long> timestampSupplier;
+    private final Supplier<Instant> instantSupplier;
+    private final Supplier<Long> timesStampSupplier;
 
-    public WalletTransactionService(WalletTransactionRepository transactionRepository,
+    public WalletTransactionService(WalletTransactionRepository walletTransactionRepository,
                                     Supplier<UUID> uuidSupplier,
-                                    Supplier<Long> timestampSupplier) {
-        this.transactionRepository = transactionRepository;
+                                    Supplier<Instant> instantSupplier, Supplier<Long> timesStampSupplier) {
+        this.walletTransactionRepository = walletTransactionRepository;
         this.uuidSupplier = uuidSupplier;
-        this.timestampSupplier = timestampSupplier;
+        this.instantSupplier = instantSupplier;
+        this.timesStampSupplier = timesStampSupplier;
     }
 
     public Optional<WalletTransaction> saveTransaction(String walletId, FundTransferRequest fundTransferRequest, TransactionStatus transactionStatus, IdProvider context) {
         String transactionId = uuidSupplier.get().toString();
-        logger.info(formatLogMessage(context, "Saving transaction with id [%s] wallet with Id [%s]", transactionId, walletId));
+        Instant transactionTimestamp = instantSupplier.get().truncatedTo(ChronoUnit.MILLIS);
 
-        ZonedDateTime transactionTimestamp = Instant.ofEpochMilli(timestampSupplier.get()).truncatedTo(ChronoUnit.MILLIS).atZone(ZoneId.of("Z"));
+        logger.info(formatLogMessage(context, "Saving transaction with id [%s] wallet with Id [%s]", transactionId, walletId));
 
         WalletTransaction walletTransaction =
                 new WalletTransaction(transactionId, walletId, fundTransferRequest.amount(), fundTransferRequest.transactionType(), transactionStatus, transactionTimestamp);
-        return Optional.of(transactionRepository.save(WalletTransactionEntityMapper.toEntity(walletTransaction)))
-                .map(WalletTransactionEntityMapper::toDTO);
+        return Optional.of(walletTransactionRepository.save(WalletTransactionEntityMapper.toEntity(walletTransaction, timesStampSupplier)))
+                .map(entity -> WalletTransactionEntityMapper.toDTO(entity, instantSupplier));
     }
 
     public Optional<WalletTransaction> saveTransaction(FundTransferRequest fundTransferRequest, TransactionStatus transactionStatus, IdProvider context) {
@@ -55,8 +55,10 @@ public class WalletTransactionService {
     }
 
     public List<WalletTransaction> getAllTransactionsByWalletId(String walletId, IdProvider context) {
-        logger.info(formatLogMessage(context, "Retrieving all transactions wallet with Id [%s]", walletId));
-        return transactionRepository.findByWalletId(walletId).stream()
-                .map(WalletTransactionEntityMapper::toDTO).toList();
+        logger.info(formatLogMessage(context, "Retrieving all transactions for wallet with Id [%s]", walletId));
+        return walletTransactionRepository.findByWalletId(walletId)
+                .stream()
+                .map(entity -> WalletTransactionEntityMapper.toDTO(entity, instantSupplier))
+                .toList();
     }
 }

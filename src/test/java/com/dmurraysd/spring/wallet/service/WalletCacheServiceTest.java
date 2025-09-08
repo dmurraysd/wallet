@@ -1,12 +1,13 @@
 package com.dmurraysd.spring.wallet.service;
 
+import com.dmurraysd.spring.wallet.WalletApplicationConfig;
 import com.dmurraysd.spring.wallet.cache.CacheConfig;
+import com.dmurraysd.spring.wallet.config.RedisTestConfig;
 import com.dmurraysd.spring.wallet.logging.IdProvider;
 import com.dmurraysd.spring.wallet.logging.LoggingUtil;
 import com.dmurraysd.spring.wallet.model.Wallet;
 import com.dmurraysd.spring.wallet.repository.WalletEntityMapper;
 import com.dmurraysd.spring.wallet.repository.WalletRepository;
-import com.dmurraysd.spring.wallet.util.config.RedisTestConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
@@ -19,13 +20,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ActiveProfiles("test")
 @EnableAutoConfiguration
-@ContextConfiguration(classes = {RedisTestConfig.class, WalletCacheService.class, CacheConfig.class, WalletRepository.class, CacheLockingService.class})
+@ContextConfiguration(classes = {RedisTestConfig.class, WalletCacheService.class, CacheConfig.class, WalletApplicationConfig.class, WalletRepository.class, CacheLockingService.class})
 @DataRedisTest(properties = {"spring.data.redis.port=6381",
         "spring.data.redis.host=localhost"})
 class WalletCacheServiceTest {

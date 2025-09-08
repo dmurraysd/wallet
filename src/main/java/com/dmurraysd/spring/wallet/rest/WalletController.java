@@ -56,19 +56,19 @@ public class WalletController {
                 .orElse(ResponseEntity.internalServerError().build());
     }
 
-    @GetMapping(value = "/balance", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Double> getBalance(@NotBlank @RequestBody String walletId) {
+    @GetMapping(value = "/balance/{walletId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<Double> getBalance(@NotBlank @PathVariable("walletId") String walletId) {
         IdProvider context = LoggingUtil.loggingContext(uuidSupplier.get(), SOURCE_ID);
         logger.info(formatLogMessage(context, "Balance retrieval with wallet Id %s", walletId));
 
         return walletService.retrieveBalance(walletId, context)
-                .filter(amount -> amount > 0)
+                .filter(amount -> amount >= 0)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping(value = "/transactions", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<List<WalletTransaction>> getWalletTransactions(@NotBlank @RequestBody String walletId) {
+    @GetMapping(value = "/transactions/{walletId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<List<WalletTransaction>> getWalletTransactions(@NotBlank @PathVariable("walletId") String walletId) {
         IdProvider context = LoggingUtil.loggingContext(uuidSupplier.get(), SOURCE_ID);
         logger.info(formatLogMessage(context, "Retrieval of transactions with wallet Id %s", walletId));
         return ResponseEntity.ok(walletService.getAllTransactions(walletId, context));

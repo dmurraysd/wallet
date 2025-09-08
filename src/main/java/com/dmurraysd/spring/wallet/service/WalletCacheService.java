@@ -61,7 +61,7 @@ public class WalletCacheService {
             Optional<Wallet> wallet = Optional.ofNullable(redisTemplate.opsForValue().get(walletId))
                     .map(Wallet.class::cast);
 
-            if(wallet.isEmpty()) {
+            if (wallet.isEmpty()) {
                 wallet = walletRepository.findByWalletId(walletId)
                         .map(WalletEntityMapper::toDTO);
 
@@ -80,17 +80,17 @@ public class WalletCacheService {
         try {
             logger.info(formatLogMessage(context, "Updating wallet to cache with wallet Id [%s]", wallet.walletId()));
             String lockValue = UUID.randomUUID().toString();
-            cacheLockingService.acquireLock(wallet.walletId(), lockValue);
+            cacheLockingService.acquireLock(wallet.walletId(), lockValue, context);
             redisTemplate.opsForValue().set(wallet.walletId(), wallet, timeOutInMills, TimeUnit.MILLISECONDS);
 
             Optional<WalletEntity> persistedWalletEntity = this.walletRepository.findByWalletId(wallet.walletId())
-                            .map(walletEntity -> WalletEntityMapper.toUpdatedBalanceEntity(wallet, walletEntity))
-                                    .map(walletRepository::save);
-            if(persistedWalletEntity.isEmpty()) {
+                    .map(walletEntity -> WalletEntityMapper.toUpdatedBalanceEntity(wallet, walletEntity))
+                    .map(walletRepository::save);
+            if (persistedWalletEntity.isEmpty()) {
                 walletRepository.save(WalletEntityMapper.toEntity(wallet));
             }
 
-            cacheLockingService.releaseLock(wallet.walletId(), lockValue);
+            cacheLockingService.releaseLock(wallet.walletId(), lockValue, context);
             return true;
         } catch (Exception e) {
             logger.error(formatLogMessage(context, "Retrieving wallet from cache with wallet Id [%s]- [%s]", wallet.walletId(), e.getMessage()));
